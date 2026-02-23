@@ -123,7 +123,7 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
     const newEntry: DayEntry = {
       date: new Date().toISOString().split('T')[0],
       summary: '',
-      location: 'Client Office',
+      location: 'JPMC-ETV',
       totalHours: 0,
       isManualEntry: true,
       isWeekend: false,

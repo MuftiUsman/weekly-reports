@@ -7,7 +7,7 @@ interface DayRowProps {
   onDelete: () => void
 }
 
-const LOCATION_OPTIONS: LocationType[] = ['Client Office', 'WFH', 'Office', 'On Leave']
+const LOCATION_OPTIONS: LocationType[] = ['JPMC-ETV','JPMC-PTP','WFH', 'Office', 'On Leave']
 
 const DayRow: React.FC<DayRowProps> = ({ entry, onChange, onDelete }) => {
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {

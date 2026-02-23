@@ -104,7 +104,7 @@ export const generateDateRangeReport = (
       dayEntries.push({
         date,
         summary: generateDaySummary(kekaEntriesForDate),
-        location: 'Client Office', // Default
+        location: 'JPMC-ETV', // Default
         totalHours: calculateTotalHours(kekaEntriesForDate),
         isManualEntry: false,
         isWeekend: isWeekendDay,

@@ -69,7 +69,7 @@ export const convertToDayEntries = (groupedEntries: Map<string, KekaTimesheetEnt
     dayEntries.push({
       date,
       summary: generateDaySummary(entries),
-      location: 'Client Office', // Default location - user can change this
+      location: 'JPMC-ETV', // Default location - user can change this
       totalHours: calculateTotalHours(entries),
       isManualEntry: false,
       isWeekend,

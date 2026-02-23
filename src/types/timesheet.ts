@@ -77,7 +77,7 @@ export interface ApproverLogEntry {
 }
 
 // Location options for work setting
-export type LocationType = 'Client Office' | 'WFH' | 'Office' | 'On Leave';
+export type LocationType = 'JPMC-ETV' | 'JPMC-PTP' | 'WFH' | 'Office' | 'On Leave';
 
 // Processed daily entry for the report
 export interface DayEntry {
