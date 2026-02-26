@@ -1,19 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Simple fallback summarizer if API call fails
-const simpleSummarizer = (text: string): string => {
-  if (!text || text.trim() === '') {
-    return 'No work activities were recorded during this period.';
-  }
-  
-  const sentences = text
-    .split('.')
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-    
-  return sentences.slice(0, 3).join('. ') + '.';
-};
-
 /**
  * Generates an executive summary using Google's Gemini API
  * @param taskSummaries The input text to summarize
@@ -27,8 +13,12 @@ export const generateExecutiveSummary = async (taskSummaries: string): Promise<s
   try {
     // Get API key from Vite environment variables
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('Gemini API key is not configured');
+    
+    // Detailed validation to catch common CI/CD or build-time issues
+    if (!apiKey || apiKey.trim() === '' || apiKey === 'undefined' || apiKey === 'null') {
+      const errorMsg = 'Gemini API key is not configured. Ensure VITE_GEMINI_API_KEY is set in your production environment variables during build.';
+      console.error(errorMsg);
+      throw new Error(errorMsg);
     }
 
     // Initialize the Google Generative AI client
@@ -72,8 +62,8 @@ export const generateExecutiveSummary = async (taskSummaries: string): Promise<s
     
   } catch (error) {
     console.error('Error generating summary with Gemini API:', error);
-    // Fall back to simple summarizer if API call fails
-    return simpleSummarizer(taskSummaries);
+    // Re-throw so UI can handle it
+    throw error;
   }
 };
 

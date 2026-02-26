@@ -69,7 +69,8 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
       updateWeeklyReport(finalReport)
     } catch (error) {
       console.error('Failed to generate summary:', error)
-      const errorReport = { ...appState.weeklyReport, executiveSummary: 'Failed to generate summary.' }
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate summary.';
+      const errorReport = { ...appState.weeklyReport, executiveSummary: `Error: ${errorMessage}. Please check your production VITE_GEMINI_API_KEY.` }
       updateWeeklyReport(errorReport)
     } finally {
       updateAppState({ isGeneratingSummary: false })
