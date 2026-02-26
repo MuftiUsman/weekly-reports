@@ -17,11 +17,12 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
   // Generate report when data or date range changes
   useEffect(() => {
     if (
-      appState.parsedKekaData.length > 0 && 
+      appState.isInitialized && 
       appState.startDate && 
       appState.endDate && 
       appState.clientName && 
-      appState.employeeName
+      appState.employeeName &&
+      !appState.weeklyReport // Only generate if no report exists yet
     ) {
       const report = generateDateRangeReport(
         appState.parsedKekaData, 
@@ -33,23 +34,28 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
       updateWeeklyReport(report)
     }
   }, [
+    appState.isInitialized,
     appState.parsedKekaData, 
     appState.clientName, 
     appState.employeeName, 
     appState.startDate,
     appState.endDate,
-    updateWeeklyReport
+    updateWeeklyReport,
+    appState.weeklyReport
   ])
 
-  // Generate executive summary when report is ready
-  useEffect(() => {
-    if (appState.weeklyReport && !appState.weeklyReport.executiveSummary && !appState.isGeneratingSummary) {
-      generateSummary()
-    }
-  }, [appState.weeklyReport?.startDate, appState.weeklyReport?.endDate, appState.weeklyReport?.entries?.length])
+  // No longer generating summary automatically on load
+  // to avoid triggering it while user is manually typing entries.
 
   const generateSummary = async () => {
     if (!appState.weeklyReport || !updateAppState) return
+    
+    // Check if there's any summary data to generate from
+    const taskSummaries = prepareTaskSummariesForAI(appState.weeklyReport.entries)
+    if (!taskSummaries.trim()) {
+      alert('Please enter some task summaries first before generating an AI summary.')
+      return
+    }
     
     // Set loading state
     updateAppState({ isGeneratingSummary: true })
@@ -57,7 +63,6 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
     updateWeeklyReport(updatedReport)
     
     try {
-      const taskSummaries = prepareTaskSummariesForAI(appState.weeklyReport.entries)
       const summary = await generateExecutiveSummary(taskSummaries)
       
       const finalReport = { ...appState.weeklyReport, executiveSummary: summary }
@@ -72,14 +77,12 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
   }
 
   const startEditingSummary = () => {
-    if (appState.weeklyReport?.executiveSummary) {
-      setEditedSummary(appState.weeklyReport.executiveSummary)
-      setIsEditingSummary(true)
-    }
+    setEditedSummary(appState.weeklyReport?.executiveSummary || '')
+    setIsEditingSummary(true)
   }
 
   const saveEditedSummary = () => {
-    if (appState.weeklyReport && editedSummary.trim()) {
+    if (appState.weeklyReport) {
       const updatedReport = { ...appState.weeklyReport, executiveSummary: editedSummary.trim() }
       updateWeeklyReport(updatedReport)
     }
@@ -104,7 +107,7 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
       .reduce((sum, entry) => sum + entry.totalHours, 0)
     
     const totalLeaveDays = updatedEntries
-      .filter(entry => !entry.isWeekend && entry.isLeave && entry.location === 'On Leave')
+      .filter(entry => !entry.isWeekend && entry.isLeave) // Count manual leave days too
       .length
 
     const updatedReport: WeeklyReport = {
@@ -156,8 +159,8 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
     updateWeeklyReport(updatedReport)
   }
 
-  // Show message if no data
-  if (appState.parsedKekaData.length === 0) {
+  // Show message if not initialized
+  if (!appState.isInitialized) {
     return (
       <div className="p-6 flex items-center justify-center h-full">
         <div className="text-center">
@@ -167,24 +170,19 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-1">No Data Available</h3>
-          <p className="text-gray-600">Parse Keka JSON data to generate weekly report</p>
+          <p className="text-gray-600">Enter client name, employee name and date range, then click "Parse JSON Data" to generate weekly report</p>
         </div>
       </div>
     )
   }
 
-  // Show message if required fields are missing
-  if (!appState.clientName.trim() || !appState.employeeName.trim() || !appState.startDate || !appState.endDate) {
+  // Show message if report creation is pending
+  if (!appState.weeklyReport) {
     return (
       <div className="p-6 flex items-center justify-center h-full">
         <div className="text-center">
-          <div className="text-yellow-400 mb-2">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Information Required</h3>
-          <p className="text-gray-600">Please enter client name, employee name, and date range to generate the report</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing report...</p>
         </div>
       </div>
     )
@@ -217,86 +215,84 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
             </div>
           </div>
 
-          {/* Executive Summary */}
-          {appState.weeklyReport.executiveSummary && (
-            <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex justify-between items-start mb-2">
-                <h4 className="text-sm font-semibold text-blue-900">Executive Summary</h4>
-                <div className="flex gap-2">
-                  {!isEditingSummary && (
-                    <>
-                      <button
-                        onClick={startEditingSummary}
-                        className="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      >
-                        <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => generateSummary()}
-                        disabled={appState.isGeneratingSummary}
-                        className="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {appState.isGeneratingSummary ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Regenerate
-                          </>
-                        )}
-                      </button>
-                    </>
-                  )}
-                  {isEditingSummary && (
-                    <>
-                      <button
-                        onClick={saveEditedSummary}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      >
-                        <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        Save
-                      </button>
-                      <button
-                        onClick={cancelEditingSummary}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      >
-                        <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancel
-                      </button>
-                    </>
-                  )}
-                </div>
+          {/* Executive Summary Section */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex justify-between items-start mb-2">
+              <h4 className="text-sm font-semibold text-blue-900">Executive Summary</h4>
+              <div className="flex gap-2">
+                {!isEditingSummary && (
+                  <>
+                    <button
+                      onClick={startEditingSummary}
+                      className="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      {appState.weeklyReport.executiveSummary ? 'Edit' : 'Add Manually'}
+                    </button>
+                    <button
+                      onClick={() => generateSummary()}
+                      disabled={appState.isGeneratingSummary}
+                      className="inline-flex items-center px-3 py-1.5 border border-blue-300 rounded-md shadow-sm text-xs font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {appState.isGeneratingSummary ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          {appState.weeklyReport.executiveSummary ? 'Regenerate' : 'Generate with AI'}
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+                {isEditingSummary && (
+                  <>
+                    <button
+                      onClick={saveEditedSummary}
+                      className="inline-flex items-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEditingSummary}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                      <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Cancel
+                    </button>
+                  </>
+                )}
               </div>
-              {isEditingSummary ? (
-                <textarea
-                  value={editedSummary}
-                  onChange={(e) => setEditedSummary(e.target.value)}
-                  className="w-full p-3 text-sm text-blue-800 bg-white border border-blue-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={4}
-                  placeholder="Enter executive summary..."
-                />
-              ) : (
-                <p className="text-sm text-blue-800 leading-relaxed">
-                  {appState.weeklyReport.executiveSummary}
-                </p>
-              )}
             </div>
-          )}
+            {isEditingSummary ? (
+              <textarea
+                value={editedSummary}
+                onChange={(e) => setEditedSummary(e.target.value)}
+                className="w-full p-3 text-sm text-blue-800 bg-white border border-blue-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={4}
+                placeholder="Enter executive summary..."
+              />
+            ) : (
+              <p className="text-sm text-blue-800 leading-relaxed min-h-[1.25rem]">
+                {appState.weeklyReport.executiveSummary || <span className="text-blue-400 italic">No summary generated yet. Click "Generate with AI" or "Add Manually".</span>}
+              </p>
+            )}
+          </div>
 
           {/* Day Entries Table */}
           <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-hidden">

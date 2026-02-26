@@ -105,7 +105,6 @@ export interface WeeklyReport {
 
 // Application state
 export interface AppState {
-  rawJsonInput: string;
   parsedKekaData: KekaTimesheetEntry[];
   clientName: string;
   employeeName: string; // Employee name for the timesheet
@@ -114,4 +113,5 @@ export interface AppState {
   weeklyReport: WeeklyReport | null;
   jsonParseError: string | null;
   isGeneratingSummary: boolean; // Loading state for AI summary
+  isInitialized: boolean; // Track if the report generation has been started
 }

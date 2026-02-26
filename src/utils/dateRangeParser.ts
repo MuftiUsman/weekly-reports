@@ -127,13 +127,12 @@ export const generateDateRangeReport = (
       dayEntries.push({
         date,
         summary: '',
-        location: 'On Leave',
+        location: 'JPMC-ETV',
         totalHours: 0,
         isManualEntry: true,
         isWeekend: false,
-        isLeave: true // Default to leave, user can change
+        isLeave: false // Default to not on leave for manual entry
       })
-      totalLeaveDays++
     }
   })
   

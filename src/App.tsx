@@ -8,7 +8,6 @@ import ApiKeyInput from './components/ApiKeyInput.tsx'
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
-    rawJsonInput: '',
     parsedKekaData: [],
     clientName: '',
     employeeName: '',
@@ -16,7 +15,8 @@ function App() {
     endDate: '',
     weeklyReport: null,
     jsonParseError: null,
-    isGeneratingSummary: false
+    isGeneratingSummary: false,
+    isInitialized: false
   })
 
   const updateAppState = useCallback((updates: Partial<AppState>) => {
@@ -57,7 +57,7 @@ function App() {
         <div className="p-6 border-b border-gray-200 flex justify-between items-start">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Weekly Report Generator</h1>
-            <p className="text-sm text-gray-600 mt-1">Import Keka timesheet data and generate professional reports</p>
+            <p className="text-sm text-gray-600 mt-1">Generate professional reports with AI summaries and PDF export</p>
           </div>
           <Button 
             type="text" 
