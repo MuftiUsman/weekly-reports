@@ -63,7 +63,7 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
     updateWeeklyReport(updatedReport)
     
     try {
-      const summary = await generateExecutiveSummary(taskSummaries)
+      const summary = await generateExecutiveSummary(taskSummaries, appState.geminiApiKey)
       
       const finalReport = { ...appState.weeklyReport, executiveSummary: summary }
       updateWeeklyReport(finalReport)

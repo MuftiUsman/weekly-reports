@@ -16,7 +16,8 @@ function App() {
     weeklyReport: null,
     jsonParseError: null,
     isGeneratingSummary: false,
-    isInitialized: false
+    isInitialized: false,
+    geminiApiKey: localStorage.getItem('gemini_api_key')
   })
 
   const updateAppState = useCallback((updates: Partial<AppState>) => {
@@ -48,7 +49,18 @@ function App() {
         width={600}
       >
         <div className="p-4">
-          <ApiKeyInput />
+          <ApiKeyInput 
+            apiKey={appState.geminiApiKey} 
+            onKeyChange={(key) => {
+              if (key.trim()) {
+                localStorage.setItem('gemini_api_key', key.trim());
+                updateAppState({ geminiApiKey: key.trim() });
+              } else {
+                localStorage.removeItem('gemini_api_key');
+                updateAppState({ geminiApiKey: null });
+              }
+            }}
+          />
         </div>
       </Modal>
 

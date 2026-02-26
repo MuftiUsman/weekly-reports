@@ -22,18 +22,20 @@ const simpleSummarizer = (text: string): string => {
 /**
  * Generates an executive summary using Google's Gemini API
  * @param taskSummaries The input text to summarize
+ * @param userApiKey Optional personal API key provided by the user in settings
  * @returns A promise that resolves to the generated summary
  */
-export const generateExecutiveSummary = async (taskSummaries: string): Promise<string> => {
+export const generateExecutiveSummary = async (taskSummaries: string, userApiKey?: string | null): Promise<string> => {
   if (!taskSummaries || taskSummaries.trim() === '') {
     return 'No work activities were recorded during this period.';
   }
 
   try {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    // Priority: User API Key > Environment Variable
+    const apiKey = userApiKey || import.meta.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey || apiKey.trim() === '' || apiKey === 'undefined' || apiKey === 'null') {
-      console.warn('Gemini API key missing, using fallback summarizer.');
+      console.warn('No Gemini API key found. Falling back to simple local summarizer.');
       return simpleSummarizer(taskSummaries);
     }
 

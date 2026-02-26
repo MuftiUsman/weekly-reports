@@ -114,4 +114,5 @@ export interface AppState {
   jsonParseError: string | null;
   isGeneratingSummary: boolean; // Loading state for AI summary
   isInitialized: boolean; // Track if the report generation has been started
+  geminiApiKey: string | null; // User-provided API key
 }
