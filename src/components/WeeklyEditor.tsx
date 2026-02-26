@@ -69,8 +69,16 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
       updateWeeklyReport(finalReport)
     } catch (error) {
       console.error('Failed to generate summary:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Failed to generate summary.';
-      const errorReport = { ...appState.weeklyReport, executiveSummary: `Error: ${errorMessage}. Please check your production VITE_GEMINI_API_KEY.` }
+      // DON'T PUT TECHNICAL ERROR IN SUMMARY FIELD
+      // The generateExecutiveSummary itself now handles fallback
+      const currentSummary = appState.weeklyReport.executiveSummary === 'Generating summary...' 
+        ? '' 
+        : appState.weeklyReport.executiveSummary;
+        
+      const errorReport = { 
+        ...appState.weeklyReport, 
+        executiveSummary: currentSummary || 'Failed to generate summary with AI.' 
+      }
       updateWeeklyReport(errorReport)
     } finally {
       updateAppState({ isGeneratingSummary: false })
