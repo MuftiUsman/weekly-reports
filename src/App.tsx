@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react'
-import { Button, Modal } from 'antd'
+import { Button, Modal, Tabs } from 'antd'
 import { SettingOutlined } from '@ant-design/icons'
 import type { AppState, WeeklyReport } from './types/timesheet'
 import JsonInput from './components/JsonInput'
 import WeeklyEditor from './components/WeeklyEditor'
 import ApiKeyInput from './components/ApiKeyInput.tsx'
+import FabricAuth from './components/FabricAuth'
 
 function App() {
   const [appState, setAppState] = useState<AppState>({
@@ -17,7 +18,11 @@ function App() {
     jsonParseError: null,
     isGeneratingSummary: false,
     isInitialized: false,
-    geminiApiKey: localStorage.getItem('gemini_api_key')
+    geminiApiKey: localStorage.getItem('gemini_api_key'),
+    groqApiKey: localStorage.getItem('groq_api_key'),
+    aiProvider: (localStorage.getItem('ai_provider') as 'gemini' | 'groq') || 'gemini',
+    fabricToken: sessionStorage.getItem('fabric_token'),
+    fabricUser: null
   })
 
   const updateAppState = useCallback((updates: Partial<AppState>) => {
@@ -27,6 +32,13 @@ function App() {
   const updateWeeklyReport = useCallback((weeklyReport: WeeklyReport) => {
     setAppState(prev => ({ ...prev, weeklyReport }))
   }, [])
+
+  const handleAuthChange = useCallback((token: string | null, user: any) => {
+    updateAppState({
+      fabricToken: token,
+      fabricUser: user
+    })
+  }, [updateAppState])
 
   const [isSettingsVisible, setIsSettingsVisible] = useState(false)
 
@@ -46,22 +58,57 @@ function App() {
         open={isSettingsVisible}
         onCancel={handleSettingsCancel}
         footer={null}
-        width={600}
+        width={700}
       >
-        <div className="p-4">
-          <ApiKeyInput 
-            apiKey={appState.geminiApiKey} 
-            onKeyChange={(key) => {
-              if (key.trim()) {
-                localStorage.setItem('gemini_api_key', key.trim());
-                updateAppState({ geminiApiKey: key.trim() });
-              } else {
-                localStorage.removeItem('gemini_api_key');
-                updateAppState({ geminiApiKey: null });
-              }
-            }}
-          />
-        </div>
+        <Tabs
+          items={[
+            {
+              key: 'fabric',
+              label: 'Fabric Connection',
+              children: (
+                <div className="p-4">
+                  <FabricAuth onAuthChange={handleAuthChange} />
+                </div>
+              )
+            },
+            {
+              key: 'ai',
+              label: 'AI Settings',
+              children: (
+                <div className="p-4">
+                  <ApiKeyInput
+                    apiKey={
+                      appState.aiProvider === 'gemini'
+                        ? appState.geminiApiKey
+                        : appState.groqApiKey
+                    }
+                    provider={appState.aiProvider}
+                    onKeyChange={(key) => {
+                      const storageKey = appState.aiProvider === 'gemini'
+                        ? 'gemini_api_key'
+                        : 'groq_api_key';
+                      const stateKey = appState.aiProvider === 'gemini'
+                        ? 'geminiApiKey'
+                        : 'groqApiKey';
+
+                      if (key.trim()) {
+                        localStorage.setItem(storageKey, key.trim());
+                        updateAppState({ [stateKey]: key.trim() });
+                      } else {
+                        localStorage.removeItem(storageKey);
+                        updateAppState({ [stateKey]: null });
+                      }
+                    }}
+                    onProviderChange={(provider) => {
+                      localStorage.setItem('ai_provider', provider);
+                      updateAppState({ aiProvider: provider });
+                    }}
+                  />
+                </div>
+              )
+            }
+          ]}
+        />
       </Modal>
 
       {/* Left Panel - JSON Input */}

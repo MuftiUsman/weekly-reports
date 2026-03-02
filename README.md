@@ -1,18 +1,19 @@
 # Weekly Report Generator
 
-A professional timesheet and weekly report generator that processes Keka timesheet JSON data and creates beautiful PDF reports with AI-powered executive summaries.
+A professional timesheet and weekly report generator that integrates with Fabric or processes Keka timesheet JSON data and creates beautiful PDF reports with AI-powered executive summaries.
 
 ## Features
 
-- **Keka Integration**: Parse Keka timesheet JSON arrays into organized daily entries
-- **Date Range Selection**: Custom start and end date selection for flexible reporting periods
-- **Smart Data Processing**: Automatically groups tasks by date and combines them into daily summaries
-- **Editable Reports**: Full editing capabilities for summaries, locations, and hours
-- **AI Executive Summaries**: Automated executive summary generation using OpenAI GPT-4o-mini
-- **Manual Summary Editing**: Edit and customize executive summaries with inline editing
-- **Professional PDF Export**: Generate client-ready PDF timesheets with company branding
-- **Multi-week Support**: Handle data spanning multiple weeks with week navigation
-- **Leave Day Tracking**: Automatic detection and handling of weekends and leave days
+- **🔗 Fabric Integration**: Automatically fetch timesheet data from Fabric API (no manual data entry!)
+- **📋 Keka Integration**: Parse Keka timesheet JSON arrays into organized daily entries
+- **📅 Date Range Selection**: Custom start and end date selection for flexible reporting periods
+- **🤖 Smart Data Processing**: Automatically groups tasks by date and combines them into daily summaries
+- **✏️ Editable Reports**: Full editing capabilities for summaries, locations, and hours
+- **🧠 AI Executive Summaries**: Automated executive summary generation using OpenAI GPT-4o-mini
+- **📝 Manual Summary Editing**: Edit and customize executive summaries with inline editing
+- **📄 Professional PDF Export**: Generate client-ready PDF timesheets with company branding
+- **📊 Multi-week Support**: Handle data spanning multiple weeks with week navigation
+- **🏖️ Leave Day Tracking**: Automatic detection and handling of weekends and leave days
 
 ## Quick Start
 
@@ -38,17 +39,52 @@ cp .env.example .env
 ### Development
 
 ```bash
-# Start development server
+# Start development server (runs both frontend and backend)
 npm run dev
+
+# Run frontend only
+npm run dev:frontend
+
+# Run backend only
+npm run dev:backend
 
 # Build for production
 npm run build
+
+# Build backend
+npm run build:backend
 
 # Preview production build
 npm run preview
 ```
 
+The app will run on:
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:3001
+
 ## Configuration
+
+### Fabric Integration (New!)
+
+To automatically fetch timesheet data from Fabric:
+
+1. **Update `.env` file** with your Fabric API URL:
+   ```env
+   FABRIC_API_URL=https://your-fabric-api.com
+   VITE_FABRIC_URL=https://your-fabric-frontend.com
+   VITE_BACKEND_URL=http://localhost:3001
+   ```
+
+2. **Connect to Fabric**:
+   - Click the Settings icon (⚙️) in the app
+   - Go to "Fabric Connection" tab
+   - Option 1: Click "Open Fabric Login" and log in with Google
+   - Option 2: Manually paste your Fabric JWT token
+
+3. **Fetch Data**:
+   - Fill in Client Name, Employee Name, and Date Range
+   - Click "Fetch from Fabric" button
+   - Data will be automatically loaded and ready to edit!
 
 ### OpenAI Integration (Optional)
 

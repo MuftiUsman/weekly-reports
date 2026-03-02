@@ -63,8 +63,17 @@ const WeeklyEditor: React.FC<WeeklyEditorProps> = ({ appState, updateWeeklyRepor
     updateWeeklyReport(updatedReport)
     
     try {
-      const summary = await generateExecutiveSummary(taskSummaries, appState.geminiApiKey)
-      
+      // Get the correct API key based on selected provider
+      const apiKey = appState.aiProvider === 'gemini'
+        ? appState.geminiApiKey
+        : appState.groqApiKey;
+
+      const summary = await generateExecutiveSummary(
+        taskSummaries,
+        apiKey,
+        appState.aiProvider
+      )
+
       const finalReport = { ...appState.weeklyReport, executiveSummary: summary }
       updateWeeklyReport(finalReport)
     } catch (error) {

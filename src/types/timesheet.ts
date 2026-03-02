@@ -114,5 +114,9 @@ export interface AppState {
   jsonParseError: string | null;
   isGeneratingSummary: boolean; // Loading state for AI summary
   isInitialized: boolean; // Track if the report generation has been started
-  geminiApiKey: string | null; // User-provided API key
+  geminiApiKey: string | null; // User-provided Gemini API key
+  groqApiKey: string | null; // User-provided Groq API key
+  aiProvider: 'gemini' | 'groq'; // Selected AI provider
+  fabricToken: string | null; // Fabric JWT token for API access
+  fabricUser: any; // Decoded user info from Fabric token
 }
