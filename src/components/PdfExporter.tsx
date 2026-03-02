@@ -4,6 +4,15 @@ import type { WeeklyReport } from '../types/timesheet'
 import think41Logo from '../assets/think41-logo.png'
 import headerBg from '../assets/header-bg.png'
 
+import 'jspdf'
+
+declare module 'jspdf' {
+  interface jsPDF {
+    setCharSpace(charSpace: number): this
+  }
+}
+
+
 interface PdfExporterProps {
   weeklyReport: WeeklyReport
 }
@@ -28,7 +37,11 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ weeklyReport }) => {
   }
 
   const generatePdf = async () => {
-    const pdf = new jsPDF()
+    const pdf = new jsPDF({
+      compress: true,
+      putOnlyUsedFonts: true,
+      precision: 16
+    })
     const pageWidth = pdf.internal.pageSize.getWidth()
     const pageHeight = pdf.internal.pageSize.getHeight()
     const margin = 20
@@ -165,30 +178,50 @@ const PdfExporter: React.FC<PdfExporterProps> = ({ weeklyReport }) => {
     
     // Executive Summary section
     if (weeklyReport.executiveSummary && weeklyReport.executiveSummary !== 'Generating summary...') {
+      const cleanedSummary = weeklyReport.executiveSummary
+        .replace(/\u2011/g, '-')  // non-breaking hyphen
+        .replace(/\u2013/g, '-')  // en dash
+        .replace(/\u2014/g, '-')  // em dash
+
+        // Set font BEFORE splitting text (important for accurate wrapping!)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(9)
+        
+        // Very conservative width to handle special characters and ensure no overflow
+      const textWidth = contentWidth - 25 // Extra padding for safety
+      const summaryLines = pdf.splitTextToSize(cleanedSummary, textWidth)
+      // const summaryLines = pdf.splitTextToSize(weeklyReport.executiveSummary, textWidth)
+      const lineHeight = 5
+      const boxPadding = 18
+      const boxHeight = Math.max(35, summaryLines.length * lineHeight + boxPadding)
+
+      // Draw box
       pdf.setFillColor(239, 246, 255) // Light blue background
-      pdf.rect(margin, currentY, contentWidth, 35, 'F')
+      pdf.rect(margin, currentY, contentWidth, boxHeight, 'F')
       pdf.setDrawColor(59, 130, 246) // Blue border
-      pdf.rect(margin, currentY, contentWidth, 35)
-      
+      pdf.rect(margin, currentY, contentWidth, boxHeight)
+
+      // Title
       currentY += 8
       pdf.setFont('helvetica', 'bold')
       pdf.setTextColor(30, 64, 175) // Dark blue
       pdf.setFontSize(11)
       pdf.text('Executive Summary', margin + 5, currentY)
-      
-      currentY += 6
+
+      // Summary text
+      currentY += 8
       pdf.setFont('helvetica', 'normal')
       pdf.setTextColor(51, 65, 85) // Dark gray
       pdf.setFontSize(9)
-      
-      // Word wrap the summary
-      const summaryLines = pdf.splitTextToSize(weeklyReport.executiveSummary, contentWidth - 10)
+
+      // Render each line with proper wrapping
       summaryLines.forEach((line: string, index: number) => {
-        if (currentY + (index * 4) > currentY + 15) return // Prevent overflow
-        pdf.text(line, margin + 5, currentY + (index * 4))
+        if (line && line.trim()) {
+          pdf.text(line, margin + 5, currentY + (index * lineHeight))
+        }
       })
-      
-      currentY += 30
+
+      currentY += (summaryLines.length * lineHeight) + 10 // Move past the text
       pdf.setTextColor(0, 0, 0) // Reset color
     }
     

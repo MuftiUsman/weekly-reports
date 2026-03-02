@@ -46,7 +46,7 @@ export const generateExecutiveSummary = async (
 
     const prompt = `
 Provide a professional, concise executive summary of the following work activities.
-Focus on key achievements and impact. Keep it between 2-3 small sentences.
+Focus on key achievements and impact. Keep it between 1-2 small sentences.
 
 Work Activities:
 ${taskSummaries}
