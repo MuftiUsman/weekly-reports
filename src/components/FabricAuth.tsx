@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Button, Input, Alert, Space, Typography, Steps } from 'antd';
+import { Button, Input, Alert, Typography, Steps } from 'antd';
 import { LogoutOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
-const { Paragraph, Link } = Typography;
+const { Paragraph } = Typography;
 
 interface FabricAuthProps {
   onAuthChange: (token: string | null, user: any) => void;
