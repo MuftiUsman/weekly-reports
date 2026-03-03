@@ -13,15 +13,24 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 const app = express();
-const PORT = process.env.BACKEND_PORT || 3001;
+const PORT = process.env.PORT || process.env.BACKEND_PORT || 3001;
 const FABRIC_API_URL = process.env.FABRIC_API_URL || 'http://localhost:8000';
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
+if (!isProduction) {
+  app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+  }));
+}
 app.use(express.json());
+
+// Serve static frontend files in production
+if (isProduction) {
+  const frontendPath = resolve(__dirname, '../../dist');
+  app.use(express.static(frontendPath));
+}
 
 // Request logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -36,6 +45,13 @@ app.get('/health', (req: Request, res: Response) => {
 
 // Mount routes
 app.use('/api/timesheets', timesheetRoutes);
+
+// Serve frontend for all other routes in production
+if (isProduction) {
+  app.get('*', (req: Request, res: Response) => {
+    res.sendFile(resolve(__dirname, '../../dist/index.html'));
+  });
+}
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
