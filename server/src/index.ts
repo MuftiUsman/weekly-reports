@@ -48,7 +48,7 @@ app.use('/api/timesheets', timesheetRoutes);
 
 // Serve frontend for all other routes in production
 if (isProduction) {
-  app.get('/*', (req: Request, res: Response) => {
+  app.get('/:path(.*)', (req: Request, res: Response) => {
     res.sendFile(resolve(__dirname, '../../dist/index.html'));
   });
 }
